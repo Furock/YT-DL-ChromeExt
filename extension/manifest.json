@@ -1,0 +1,27 @@
+{
+	"manifest_version": 3,
+	"name": "YT-DLP-EXT",
+	"description": "Audio/Video downloader (with support for many sites)",
+	"version": "1.0.0",
+	"icons": {
+		"16": "assets/icon.ico",
+		"32": "assets/icon.ico",
+		"48": "assets/icon.ico",
+		"128": "assets/icon.ico"
+	},
+	"permissions": ["activeTab", "scripting", "contentSettings", "nativeMessaging"],
+	"action": {
+		"default_title": "Klicke um Download Dialog zu öffnen.",
+		"default_icon": {
+			"16": "assets/icon.ico",
+			"32": "assets/icon.ico",
+			"48": "assets/icon.ico",
+			"128": "assets/icon.ico"
+		},
+		"default_popup": "popup/popup.html"
+	},
+	"background": {
+		"service_worker": "background.js"
+	},
+	"update_url" : "https://raw.githubusercontent.com/Furock/YT-DL-ChromeExt/refs/heads/main/extension/update.xml"
+}
