@@ -1,0 +1,17 @@
+name: Publish extension or native host
+run-name: ${{ github.actor }} is publishing a new version of the extension or the native host
+on: 
+  push:
+    branches:
+      - main
+      - release/**
+jobs:
+  Publish:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🔎 The name of your branch is ${{ github.ref }}"
+      - name: Check out repo
+        uses: actions/checkout@v4
+      - name: Determine changes
+        run: 
