@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - release/**
+      - gh_action
 jobs:
   Publish:
     runs-on: ubuntu-latest
