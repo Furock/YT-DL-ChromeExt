@@ -14,5 +14,10 @@ jobs:
       - run: echo "🔎 The name of your branch is ${{ github.ref }}"
       - name: Check out repo
         uses: actions/checkout@v4
+      - name: Fetch old commit
+        run: git fetch origin ${{ github.event.before }}
       - name: Determine changes
-        run: git status
+        id: changes
+        run: |
+          git diff --name-only HEAD ${{ github.event.before }} >> $GITHUB_OUTPUT
+          echo $GITHUB_OUTPUT
