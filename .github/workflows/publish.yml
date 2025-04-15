@@ -21,17 +21,16 @@ jobs:
         env: 
           changeFile: changes.txt
         run: |
-          ls ../../_temp | grep .sh | tee ls.txt
-          while read p; do echo "    $p"; cat ../../_temp/$p; done < ls.txt
           git diff --name-only HEAD ${{ github.event.before }} | tee $changeFile
-          echo "changes=$changeFile" >> "$GITHUB_OUPUT"
+          echo "changes=$changeFile" >> "$GITHUB_OUTPUT"
       - name: Get zipper
         run: sudo apt install zip
       - name: Create zips of changes
+        env:
+          zipExtension: false
+          zipNativeHost: false
+          zipAll: true
         run: |
-          pwd
-          zipExtension=false
-          zipNativeHost=false
           while read p; do
             if [[ p == extension* ]] && !zipExtension; then
               zip -r extension.zip extension
