@@ -18,7 +18,9 @@ jobs:
         run: git fetch origin ${{ github.event.before }}
       - name: Determine changes
         id: changes
-        run: git diff --name-only HEAD ${{ github.event.before }} | tee $GITHUB_OUTPUT
+        run: |
+          git diff --name-only HEAD ${{ github.event.before }} | tee changes.txt
+          changes.txt >> $GITHUB_OUPUT
       - name: Get zipper
         run: sudo apt install zip
       - name: Create zips of changes
