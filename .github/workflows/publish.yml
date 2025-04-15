@@ -14,4 +14,4 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
       - name: Determine changes
-        run: 
+        run: git status
