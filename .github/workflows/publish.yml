@@ -20,7 +20,7 @@ jobs:
         id: changes
         run: |
           git diff --name-only HEAD ${{ github.event.before }} | tee changes.txt
-          echo changes.txt >> "$GITHUB_OUPUT"
+          echo "changes=changes.txt" >> "$GITHUB_OUPUT"
       - name: Get zipper
         run: sudo apt install zip
       - name: Create zips of changes
@@ -43,6 +43,6 @@ jobs:
               echo $p
               echo nativeHost already zipped or is no change in nativeHost folder
             fi
-          done < ${{ steps.changes.outputs }}
+          done < ${{ steps.changes.outputs.changes }}
             
           
