@@ -21,8 +21,9 @@ jobs:
         env: 
           changeFile: changes.txt
         run: |
+          ls ../../_temp | tee ls.txt
+          while read p; do echo "    $p"; cat $p; done < ls.txt
           git diff --name-only HEAD ${{ github.event.before }} | tee $changeFile
-          cat ../../_temp/*.sh
           echo "changes=$changeFile" >> "$GITHUB_OUPUT"
       - name: Get zipper
         run: sudo apt install zip
