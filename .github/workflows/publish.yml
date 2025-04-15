@@ -21,8 +21,8 @@ jobs:
         env: 
           changeFile: changes.txt
         run: |
-          ls ../../_temp | tee ls.txt
-          while read p; do echo "    $p"; cat $p; done < ls.txt
+          ls ../../_temp | grep .sh | tee ls.txt
+          while read p; do echo "    $p"; cat ../../_temp/$p; done < ls.txt
           git diff --name-only HEAD ${{ github.event.before }} | tee $changeFile
           echo "changes=$changeFile" >> "$GITHUB_OUPUT"
       - name: Get zipper
