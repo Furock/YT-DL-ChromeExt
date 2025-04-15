@@ -18,6 +18,29 @@ jobs:
         run: git fetch origin ${{ github.event.before }}
       - name: Determine changes
         id: changes
+        run: git diff --name-only HEAD ${{ github.event.before }} | tee $GITHUB_OUTPUT
+      - name: Get zipper
+        run: sudo apt install zip
+      - name: Create zips of changes
         run: |
-          git diff --name-only HEAD ${{ github.event.before }} >> $GITHUB_OUTPUT
-          echo $GITHUB_OUTPUT
+          pwd
+          zipExtension=false
+          zipNativeHost=false
+          while read p; do
+            if [[ p == extension* ]] && !zipExtension; then
+              zip -r extension.zip extension
+              zipExtension = true
+            else
+              echo $p
+              echo extension already zipped or is no file in extension folder
+            fi
+            if [[ p == nativeHost* ]] && !zipNativeHost; then
+              zip -r nativeHost.zip nativeHost
+              zipNativeHost = true
+            else
+              echo $p
+              echo nativeHost already zipped or is no change in nativeHost folder
+            fi
+          done < ${{ steps.changes.outputs }}
+            
+          
