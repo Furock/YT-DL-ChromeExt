@@ -1,22 +1,22 @@
 {
 	"manifest_version": 3,
-	"name": "YT-DLP-EXT",
-	"description": "Audio/Video downloader (with support for many sites)",
+	"name": "YT-DLP-EXT-Audio",
+	"description": "Audio downloader (with support for many sites)",
 	"version": "1.0.0",
 	"icons": {
-		"16": "assets/icon.ico",
-		"32": "assets/icon.ico",
-		"48": "assets/icon.ico",
-		"128": "assets/icon.ico"
+		"16": "assets/icon16.png",
+		"32": "assets/icon32.png",
+		"48": "assets/icon48.png",
+		"128": "assets/icon128.png"
 	},
 	"permissions": ["activeTab", "scripting", "contentSettings", "nativeMessaging"],
 	"action": {
 		"default_title": "Klicke um Download Dialog zu öffnen.",
 		"default_icon": {
-			"16": "assets/icon.ico",
-			"32": "assets/icon.ico",
-			"48": "assets/icon.ico",
-			"128": "assets/icon.ico"
+			"16": "assets/icon16.png",
+			"32": "assets/icon32.png",
+			"48": "assets/icon48.png",
+			"128": "assets/icon128.png"
 		},
 		"default_popup": "popup/popup.html"
 	},
