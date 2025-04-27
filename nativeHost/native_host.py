@@ -1,24 +1,26 @@
 import sys
-#import psutil
-import subprocess
+import psutil
 import json
 import datetime
 import os, os.path
 import traceback
 import tempfile
 from json.decoder import JSONDecodeError
+from yt_dlp import YoutubeDL
 
-unsafe = True
-debug = False
+import ytdl_gcext_logger
+from ytdl_gcext_logger import log
+import ytdl_gcext_audioconverter
+
+# if the process grandparent is chrome then it's called by the extension else it's a local execution
+localEx = psutil.Process(os.getpid()).parent().parent.__name__ not in  ["chrome.exe"]
 debugMessage = {
             "PURPOSE": "YT-DLP",
             "MSG": {
-                #"-k" : "", 
-                "-x" : "",
-                "--audio-format" : "mp3",
-                "--audio-quality" : "0",
-                "-P" : "C:\\Users\\renen\\Downloads\\YT-DLP",
-                "url" : "http://localhost"
+                "format" : "mp3",
+                "quality" : "0",
+                "downloadPath" : "C:\\Users\\renen\\Downloads\\YT-DLP",
+                "url" : "http://localhost:8000/vehicle.mp4"
             }
         }
 executionStartForFilename = datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")[:-3]
@@ -37,26 +39,20 @@ def getExistingDir(*pathElements):
 tempDir = getExistingDir(tempfile.gettempdir(), "YT-DL_GCEXT")
 executionTempDir = getExistingDir(tempDir, executionStartForFilename)
 logDir = getExistingDir(executionTempDir, "logs")
-currentLogFile = os.path.join(logDir, "local-py.log")
+currentLogFile = os.path.join(logDir, "native-host.log")
+ytdl_gcext_logger.defaultLog = currentLogFile
+ytdl_gcext_logger.alsoLogToStdout = localEx
+
 extensionLogFile = os.path.join(logDir, "extension.log")
 downloadsDir = getExistingDir(os.path.expanduser("~"), "Downloads", "YT-DLP")
 if os.name == "nt" and downloadsDir[0] == "~": downloadsDir = None
 ytdlpOutFile = os.path.join(logDir, "ytdlpProcess.txt")
 tempDownload = getExistingDir(executionTempDir, "downloads")
 allLogFile = os.path.join(tempDir, "results.log")
-    
-def log(*values, **kwargs):
-    if kwargs.get("file") == None: kwargs["file"] = currentLogFile
-    with open(kwargs.get("file"), "a") as f:
-        kwargs["file"] = f
-        print(nowAsString(), *values, **kwargs)
-        if debug:
-            kwargs.pop("file", None)
-            print(nowAsString(), *values, **kwargs)
 
 def read_message():
 
-    if debug:
+    if localEx:
         return debugMessage
 
     # Lese die Nachricht von stdin
@@ -78,63 +74,48 @@ def read_message():
         log("Message too long:", "'" + message.decode('utf-8') + "...'")
         return message.decode('utf-8') + "..."
 
+def printProgress(dict):
+    if dict.get("status") != "error":
+        log(dict.get("info_dict", {}).get("title", "NO_TITLE"), dict.get("_default_template"))
+    else: log(dict) 
 
-wishedDownloadPath = None
-def use_message(message):
+def process_message(message):
     if message.get("PURPOSE") == "LOGGING":
         log(message.get("MSG"))
     elif message.get("PURPOSE") == "YT-DLP":
         with open(ytdlpOutFile, "w") as f:
+            msg = message.get("MSG")
 
-            if unsafe:
-                cmd = ['yt-dlp']
-                msg = message.get("MSG")
-                global wishedDownloadPath
-                wishedDownloadPath = msg.pop("-P", wishedDownloadPath)
-                wishedDownloadPath = msg.pop("--paths", wishedDownloadPath)
+            ytdl_gcext_audioconverter.destinationFormat = msg.get("format", "mp3")
 
-                if msg.get("-P") == None and msg.get("--paths") == None:
-                    msg["-P"] = downloadsDir
-                
-                if os.name == "nt" and msg.get("--windows-filenames") == None:
-                    msg["--windows-filenames"] = "" # that way we activate this
-                for key, value in msg.items():
-                    if key == "url": continue
-                    cmd.append(key.replace("--exec","")) #no harmful code allowed
-                    if value: cmd.append(value.replace("--exec",""))
-                
-                cmd.append(msg.get('url', "no-url"))
-                log(' '.join(cmd))
-                result = subprocess.Popen(args=cmd, stdout=f, stderr=f)
-
-                return result.returncode == 0
-            else:
-                cmd = ['yt-dlp']
-                msg = message.get("MSG")
-                wishedDownloadPath = msg.pop("-P", wishedDownloadPath)
-                wishedDownloadPath = msg.pop("--paths", wishedDownloadPath)
-                
-                if os.name == "nt" and msg.get("--windows-filenames") == None:
-                    msg["--windows-filenames"] = "" # that way we activate this
-                for key, value in msg.items():
-                    if key == "url": continue
-                    cmd.append(key.replace("--exec","")) #no harmful code allowed
-                    if value: cmd.append(value.replace("--exec",""))
-                
-                log(' '.join(cmd))
-                result = subprocess.run(args=cmd, capture_output=True, text=True)
-                
-                
-                if result.stdout:
-                    log("OUT:", file=ytdlpOutFile)
-                    log(result.stdout, file=ytdlpOutFile)
-                    log(os.linesep, file=ytdlpOutFile)
-                if result.stderr:
-                    log("ERR:", file=ytdlpOutFile)
-                    log(result.stderr, file=ytdlpOutFile)
-
-
-                return result.stderr == None
+            msgDownloadPath = msg.get("downloadPath", "").strip()
+            downloadPath = msgDownloadPath if len(msgDownloadPath) > 0 else downloadsDir
+            
+            with YoutubeDL({
+                "format": "bestaudio/best",
+                "windowsfilenames" : os.name == "nt",
+                "postprocessors" : [
+                    {
+                        "key" : "FFmpegExtractAudio"
+                    }
+                ],
+                "progress_hooks" : [printProgress],
+                "postprocessor_hooks" : [ytdl_gcext_audioconverter.convertFile],
+                "paths": { 
+                    "home" : downloadPath
+                },
+                "logger": ytdl_gcext_logger.getLogger(ytdlpOutFile),
+                "keepvideo": True
+            }) as dlp:
+                dlp.download([msg.get("url")])
+            
+            # if result.stdout:
+            #     log("OUT:", file=ytdlpOutFile)
+            #     log(result.stdout, file=ytdlpOutFile)
+            #     log(os.linesep, file=ytdlpOutFile)
+            # if result.stderr:
+            #     log("ERR:", file=ytdlpOutFile)
+            #     log(result.stderr, file=ytdlpOutFile)
 
 def send_message(message):
     encoded_message = json.dumps(message)#.encode('utf-8')
@@ -177,7 +158,7 @@ def main():
 
             with open(currentLogFile, "a") as f:
                 traceback.print_exc(file=f)
-                if debug: traceback.print_exc()
+                if localEx: traceback.print_exc()
 
             log("Handle exception:", exception)
 
@@ -195,7 +176,7 @@ def main():
             
             status="PROCESSING_DATA"
             
-            success = use_message(msg)
+            success = process_message(msg)
             if success: status="SUCCESS"
             else:
                 status = "FAILURE"
@@ -215,6 +196,16 @@ def main():
         except Exception as f:
             handleException(f, newStatus="DONT KNOW BUT PROLLY NO RESP SENT", newErrorCode="HIGH_LEVEL_ERROR")
 
+            response = {
+                "status": status,
+                "message": "",
+                "yt-dlp.out": ytdlpOutFile
+            }
+
+            if errorcode:
+                response["errorCode"] = errorcode
+
+
         logObj = {
             "metadata" : {
                 "time": nowAsString(),
@@ -233,7 +224,7 @@ def main():
     except Exception:
         with open(currentLogFile, "a") as logFile:
             traceback.print_exc(file=logFile)
-            if debug: traceback.print_exc()
+            if localEx: traceback.print_exc()
 
     # #archive if no SUCCESS
     # if status != "SUCCESS":
