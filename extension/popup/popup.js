@@ -1,12 +1,34 @@
 
 
 async function forwardToBackground(obj, forwardToNativeHost = false) {
+    // return new Promise((resolve, reject) => {
+    //     chrome.runtime.sendMessage({"obj": obj, "forwardToNativeHost": forwardToNativeHost}, response => {
+    //         resolve(response)
+    //     });
+    // })
     return await chrome.runtime.sendMessage({"obj": obj, "forwardToNativeHost": forwardToNativeHost});
 }
 
 async function forwardToNativeHost(obj) {
     return await forwardToBackground(obj, true)
 }
+
+async function getFormats() {
+    let response = await forwardToBackground({
+        "REQUEST": "GetFormats"
+    }, false)
+
+    console.log("Received Response from Service Worker:", response)
+        
+    response.forEach(format => {
+        let option = document.createElement("option")
+        option.value = format
+        option.innerText = format
+        document.getElementById("format").appendChild(option)
+    })
+}
+
+getFormats()
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("submit-download").addEventListener("click", async () => {
@@ -15,11 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (tabs.length == 1) {
             message = {
-                "PURPOSE": "YT-DLP",
+                "REQUEST": "YT-DLP",
                 "MSG": {
-                    "-x": "",
-                    "--audio-format" : document.getElementById("format").value,
-                    "--audio-quality" : "0",
+                    "audio-format" : document.getElementById("format").value,
                     "url" : tabs[0].url
                 }
             }

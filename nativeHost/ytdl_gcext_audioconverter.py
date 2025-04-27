@@ -35,7 +35,7 @@ destinationFormat = "'NO FORMAT SET'"
 def convertFile(ctx):
     currentFormat = ctx.get("info_dict", {}).get("ext")
     if ctx.get("postprocessor") == "MoveFiles" and ctx.get("status") == "finished" and currentFormat != destinationFormat:
-        log("Start conversion")
+        log("Start conversion to " + destinationFormat)
         filepath = ctx.get("info_dict", {}).get("filepath", "NO_FILE")
         def cmd(stream):
             return ["cmd", "/c", "ffprobe", 

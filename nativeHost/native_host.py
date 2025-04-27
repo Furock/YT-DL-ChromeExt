@@ -5,6 +5,7 @@ import datetime
 import os, os.path
 import traceback
 import tempfile
+import logging
 from json.decoder import JSONDecodeError
 from yt_dlp import YoutubeDL
 
@@ -13,12 +14,11 @@ from ytdl_gcext_logger import log
 import ytdl_gcext_audioconverter
 
 # if the process grandparent is chrome then it's called by the extension else it's a local execution
-localEx = psutil.Process(os.getpid()).parent().parent.__name__ not in  ["chrome.exe"]
+localEx = psutil.Process(os.getpid()).parent().parent().name() not in  ["chrome.exe"]
 debugMessage = {
-            "PURPOSE": "YT-DLP",
+            "REQUEST": "YT-DLP",
             "MSG": {
-                "format" : "mp3",
-                "quality" : "0",
+                "audio-format" : "flac",
                 "downloadPath" : "C:\\Users\\renen\\Downloads\\YT-DLP",
                 "url" : "http://localhost:8000/vehicle.mp4"
             }
@@ -55,9 +55,8 @@ def read_message():
     if localEx:
         return debugMessage
 
-    # Lese die Nachricht von stdin
     length = sys.stdin.buffer.read(4)
-    log("Read message length:", "'" + length.hex() + "'", end=" ")
+    log("Read message length:", "'" + length.hex() + "'")
     if len(length) < 4:
         return None
     message_length = int.from_bytes(length, byteorder='little')
@@ -80,13 +79,16 @@ def printProgress(dict):
     else: log(dict) 
 
 def process_message(message):
-    if message.get("PURPOSE") == "LOGGING":
+    req = message.get("REQUEST")
+    if req == "LOGGING":
         log(message.get("MSG"))
-    elif message.get("PURPOSE") == "YT-DLP":
+    elif req == "GetFormats":
+        return [v for v in ytdl_gcext_audioconverter.FORMAT_CODECS]
+    elif req == "YT-DLP":
         with open(ytdlpOutFile, "w") as f:
             msg = message.get("MSG")
-
-            ytdl_gcext_audioconverter.destinationFormat = msg.get("format", "mp3")
+            
+            ytdl_gcext_audioconverter.destinationFormat = msg.get("audio-format", "mp3")
 
             msgDownloadPath = msg.get("downloadPath", "").strip()
             downloadPath = msgDownloadPath if len(msgDownloadPath) > 0 else downloadsDir
@@ -108,14 +110,8 @@ def process_message(message):
                 "keepvideo": True
             }) as dlp:
                 dlp.download([msg.get("url")])
-            
-            # if result.stdout:
-            #     log("OUT:", file=ytdlpOutFile)
-            #     log(result.stdout, file=ytdlpOutFile)
-            #     log(os.linesep, file=ytdlpOutFile)
-            # if result.stderr:
-            #     log("ERR:", file=ytdlpOutFile)
-            #     log(result.stderr, file=ytdlpOutFile)
+    else:
+        log(f"Request {req} unknown", level = logging.ERROR)
 
 def send_message(message):
     encoded_message = json.dumps(message)#.encode('utf-8')
@@ -146,6 +142,8 @@ def main():
             print("START:", nowAsString(), file=f)
             print("OS:", os.name, file=f)
             print("PYTHON:", sys.version, file=f)
+            print("EXTENSION-CALL:", not localEx, file=f)
+            print("GRANDPARENT-PROCESS:", psutil.Process(os.getpid()).parent().parent().name(), file=f)
             print(file=f)
 
         msg = "READ MESSAGE"
@@ -160,7 +158,7 @@ def main():
                 traceback.print_exc(file=f)
                 if localEx: traceback.print_exc()
 
-            log("Handle exception:", exception)
+            log(exception, level=logging.ERROR)
 
         try:
             try:
@@ -171,23 +169,22 @@ def main():
                 handleException(e, newStatus="READ_ERROR", newErrorCode="INVALID_JSON")
             else:
                 status = "READ_SUCCESS"
-                print("Empfangene Nachricht:", msg)
-                log("Empfangene Nachricht:", msg)
+                log("Received Message:", msg)
             
             status="PROCESSING_DATA"
             
-            success = process_message(msg)
-            if success: status="SUCCESS"
-            else:
-                status = "FAILURE"
-                errorcode = "DOWNLOAD_ERROR"
+            result = process_message(msg)
+            
+            status = "DATA_PROCESSED"
 
 
             response = {
                 "status": status,
-                "message": "",
-                "yt-dlp.out": ytdlpOutFile
+                "message": result
             }
+
+            if msg.get("PURPOSE") == "YT-DLP":
+                response["yt-dlp.out"] = ytdlpOutFile
 
             if errorcode:
                 response["errorCode"] = errorcode
@@ -198,9 +195,11 @@ def main():
 
             response = {
                 "status": status,
-                "message": "",
-                "yt-dlp.out": ytdlpOutFile
+                "message": ""
             }
+
+            if msg.get("PURPOSE") == "YT-DLP":
+                response["yt-dlp.out"] = ytdlpOutFile
 
             if errorcode:
                 response["errorCode"] = errorcode
