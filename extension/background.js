@@ -7,8 +7,18 @@ function log(...data) {
 	console.log(getTime(), ...data)
 }
 
+function error(...data) {
+	console.error(getTime(), ...data)
+}
+
+
 async function toNativeHost(msg) {
-	log("Send to local.py:", msg)
+	if (!msg) {
+		error("msg undefined")
+		return;
+	}
+	
+	log("Send to native host:", msg)
 
 	//chrome sends 4 bytes for the following message length
 	//4 bytes are 32bits for possible message lengths
@@ -16,45 +26,65 @@ async function toNativeHost(msg) {
 	let GB_IN_BYTES = 1073741824
 	if (JSON.stringify(msg) >= 4*GB_IN_BYTES) {
 		//hopefully NEVER happens
-		console.log("Message is bigger than 4GB")
+		log("Message is bigger than 4GB")
 		return null;
 	} else {
-		console.log(msg)
+		log(msg)
 		let resp = await chrome.runtime.sendNativeMessage('furock.yt_dl_native_msg_host', msg)
-		console.log('Received:', resp);
+		log('Received:', resp);
 		return resp; 
 	}
 }
 
 formats = [];
 
-function receiveMessage(msg, sender, sendResponse) {
-	console.log("Sender", sender)
-	console.log("Message", msg)
+/**
+ * 
+ * @returns {chrome.runtime.Port}
+ */
+function startNative() {
+	return chrome.runtime.connectNative('furock.yt_dl_native_msg_host')
+}
 
-	if (msg["forwardToNativeHost"]) {
-		toNativeHost(msg["obj"])
-	} else {
-		if (msg["obj"]["REQUEST"] == "GetFormats") {
-			if (formats.length == 0) {
-				toNativeHost(msg["obj"]).then(resp => {
-					console.log("Response from native host:", resp)
-					console.log("Send to popup:", resp["message"])
-					formats = resp["message"]
-					sendResponse(formats)
-				})
-			} else {
-				sendResponse(formats)	
-			}
-			
-		} else {
-			console.error("Unknown request: " + msg["obj"]["REQUEST"])
+function createResponse(request, responsePayload) {
+	let response = {}
+	response.id = request.id;
+	response.type = "response:"+request.type;
+	response.payload = responsePayload;
+	return response;
+}
+
+chrome.runtime.onConnect.addListener((port) => {
+	log("Port geöffnet für ", port.sender, port.name)
+	
+	port.onDisconnect.addListener((port) => {
+		log("Popup closed")
+	})
+	
+	// receive Message from popup
+	port.onMessage.addListener((msg, port) => {
+		log("Sender", port.sender)
+		log("Message", msg)
+
+		switch (msg["type"]) {
+			case "GetFormats":
+				if (formats.length == 0) {
+					toNativeHost(msg).then(resp => {
+						log("Response from native host:", resp)
+						log("Send to popup:", resp["message"])
+						formats = resp["message"]
+						port.postMessage(createResponse(msg, formats))
+					})
+				} else {
+					port.postMessage(createResponse(msg, formats))
+				}
+				break;
+			case "YT-DLP":
+				toNativeHost(msg)
+				break;
+			default:
+				error("Received message with unknown message type " + msg["type"])
+				break;
 		}
-			
-	}
-	return true;
-}
-
-if (!chrome.runtime.onMessage.hasListener(receiveMessage)) {
-	chrome.runtime.onMessage.addListener(receiveMessage)
-}
+	})
+})

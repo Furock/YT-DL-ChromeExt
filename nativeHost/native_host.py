@@ -16,9 +16,9 @@ import ytdl_gcext_audioconverter
 # if the process grandparent is chrome then it's called by the extension else it's a local execution
 localEx = psutil.Process(os.getpid()).parent().parent().name() not in  ["chrome.exe"]
 debugMessage = {
-            "REQUEST": "YT-DLP",
-            "MSG": {
-                "audio-format" : "flac",
+            "type": "YT-DLP",
+            "payload": {
+                "audio-format" : "mp3",
                 "downloadPath" : "C:\\Users\\renen\\Downloads\\YT-DLP",
                 "url" : "http://localhost:8000/vehicle.mp4"
             }
@@ -78,40 +78,40 @@ def printProgress(dict):
         log(dict.get("info_dict", {}).get("title", "NO_TITLE"), dict.get("_default_template"))
     else: log(dict) 
 
-def process_message(message):
-    req = message.get("REQUEST")
-    if req == "LOGGING":
-        log(message.get("MSG"))
-    elif req == "GetFormats":
-        return [v for v in ytdl_gcext_audioconverter.FORMAT_CODECS]
-    elif req == "YT-DLP":
-        with open(ytdlpOutFile, "w") as f:
-            msg = message.get("MSG")
-            
-            ytdl_gcext_audioconverter.destinationFormat = msg.get("audio-format", "mp3")
+def ytdlp(body):
+    ytdl_gcext_audioconverter.destinationFormat = body.get("audio-format", "mp3")
 
-            msgDownloadPath = msg.get("downloadPath", "").strip()
-            downloadPath = msgDownloadPath if len(msgDownloadPath) > 0 else downloadsDir
-            
-            with YoutubeDL({
-                "format": "bestaudio/best",
-                "windowsfilenames" : os.name == "nt",
-                "postprocessors" : [
-                    {
-                        "key" : "FFmpegExtractAudio"
-                    }
-                ],
-                "progress_hooks" : [printProgress],
-                "postprocessor_hooks" : [ytdl_gcext_audioconverter.convertFile],
-                "paths": { 
-                    "home" : downloadPath
-                },
-                "logger": ytdl_gcext_logger.getLogger(ytdlpOutFile),
-                "keepvideo": True
-            }) as dlp:
-                dlp.download([msg.get("url")])
+    msgDownloadPath = body.get("downloadPath", "").strip()
+    downloadPath = msgDownloadPath if len(msgDownloadPath) > 0 else downloadsDir
+    
+    with YoutubeDL({
+        "format": "bestaudio/best",
+        "windowsfilenames" : os.name == "nt",
+        "postprocessors" : [
+            {
+                "key" : "FFmpegExtractAudio"
+            }
+        ],
+        "progress_hooks" : [printProgress],
+        "postprocessor_hooks" : [ytdl_gcext_audioconverter.convertFile],
+        "paths": { 
+            "home" : downloadPath
+        },
+        "logger": ytdl_gcext_logger.getLogger(ytdlpOutFile),
+        "keepvideo": True
+    }) as dlp:
+        dlp.download([body.get("url")])
+
+def process_message(message):
+    type = message.get("type")
+    if type == "LOGGING":
+        log(message.get("payload"))
+    elif type == "GetFormats":
+        return [v for v in ytdl_gcext_audioconverter.FORMAT_CODECS]
+    elif type == "YT-DLP":
+        ytdlp(message.get("payload"))
     else:
-        log(f"Request {req} unknown", level = logging.ERROR)
+        log(f"Request {type} unknown", level = logging.ERROR)
 
 def send_message(message):
     encoded_message = json.dumps(message)#.encode('utf-8')
