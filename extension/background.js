@@ -52,6 +52,7 @@ chrome.runtime.onConnect.addListener((port) => {
 				break;
 			case "GetDownloads":
 				send("RESP:" + msg.type, msg.id, downloads, port)
+				downloads = downloads.filter(dl => dl.state != Download.State.ABORTED && dl.state != Download.State.FINISHED)
 				break;
 			case "YT-DLP":
 				if (!isDownloading()) {
@@ -148,6 +149,7 @@ function startNative() {
 				if (Object.keys(Download.Progress).includes(progress)) progress = Download.Progress[progress]
 				download = new Download(msg.payload.id, null, 
 					Download.State[msg.payload.state], progress)
+				download.title = msg.payload.title
 
 				download.id = portDownloadMap.get(nativePort)
 				

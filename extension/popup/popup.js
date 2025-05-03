@@ -31,6 +31,9 @@ port.onMessage.addListener((msg) => {
 document.getElementById("submit-download").addEventListener("click", download)
 
 getFormats()
+
+let hasAddedDownloadHeader = false;
+
 getDownloads()
 
 //__method_declarations________________________________________________________________________________________
@@ -104,7 +107,16 @@ function createElement(tagName, classes, innerText, parent) {
  * @param {Download} downloadObj 
  */
 function createDownloadElement(downloadObj) {
-    let download = document.createElement("div")
+    let downloads = document.getElementById("downloads")
+
+    if (!hasAddedDownloadHeader) {
+        let header = document.createElement("h3")
+        header.innerText = "Downloads"
+        downloads.before(header)
+        hasAddedDownloadHeader = true
+    }
+    
+    let download = createElement("div", null, null, downloads)
     download.id = downloadObj.id
 
     let description = createElement("div", "description", "", download)
@@ -125,7 +137,7 @@ async function getDownloads() {
     let response = await sendGet("GetDownloads")
         
     response.forEach(downloadObj => {
-        document.getElementById("downloads").appendChild(createDownloadElement(downloadObj))
+        createDownloadElement(downloadObj)
     })
 }
 
@@ -148,11 +160,10 @@ function download() {
 function update(downloadObj) {
     //console.log("UPDATE", downloadObj.id)
     let downloadElement = document.getElementById(downloadObj.id)
-    let downloadsElement = document.getElementById("downloads")
+
     if (!downloadElement) {
         //console.log("Create Download HTML Element")
         downloadElement = createDownloadElement(downloadObj)
-        downloadsElement.appendChild(downloadElement)
     } else {
         //console.log("Update existing Download HTML Element")
         let titleElement = downloadElement.getElementsByClassName("title").item(0)
@@ -160,7 +171,8 @@ function update(downloadObj) {
         let stateElement = stateElements.item(stateElements.length-1)
         let progressElements = downloadElement.getElementsByClassName("progress")
         let progressElement = progressElements.item(progressElements.length-1)
-
+        
+        log(downloadObj.title, titleElement.innerText)
         if (downloadObj.title && (titleElement.innerText === "" || titleElement.innerText !== downloadObj.title)) {
             titleElement.innerText = downloadObj.title
         }
@@ -170,7 +182,6 @@ function update(downloadObj) {
             progressElement.innerText = downloadObj.progress
         } else {
             //console.log("Create new status element for new state", downloadObj.state)
-            log(Object.values(Download.Progress), progressElement.innerText)
             if (Object.values(Download.Progress).includes(progressElement.innerText)) {
                 if (downloadObj.state === Download.State.ABORTED) {
                     progressElement.innerText = Download.Progress.ERROR
