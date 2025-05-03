@@ -12,3 +12,5 @@ jsconfig.json
 yt-dl-native-msg-manifest.json
 YT-DL_GCEXT.code-workspace
 nativeHost/__pycache__/**
+
+test/TestServer/**

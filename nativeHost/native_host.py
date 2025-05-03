@@ -74,9 +74,35 @@ def read_message():
         return message.decode('utf-8') + "..."
 
 def printProgress(dict):
+    send_message({
+        "type": "UPDATE",
+        "payload": {
+            "title": dict.get("info_dict", {}).get("title", "NO_TITLE"),
+            "state": "DOWNLOAD", #dict.get("status"),
+            "progress": dict.get("_default_template")
+        }
+    })
     if dict.get("status") != "error":
         log(dict.get("info_dict", {}).get("title", "NO_TITLE"), dict.get("_default_template"))
     else: log(dict) 
+
+def ppFinished(ctx) -> bool:
+    """
+    returns true if yt-dlps own postprocessing is finished
+    """
+    return ctx.get("postprocessor") == "MoveFiles" and ctx.get("status") == "finished"
+
+def convertFile(ctx):
+    if ppFinished(ctx):
+        send_message({
+            "type": "UPDATE",
+            "payload": {
+                "state": "CONVERSION"
+            }
+            
+        })
+        ytdl_gcext_audioconverter.convertFile(ctx)
+        
 
 def ytdlp(body):
     ytdl_gcext_audioconverter.destinationFormat = body.get("audio-format", "mp3")
@@ -93,7 +119,7 @@ def ytdlp(body):
             }
         ],
         "progress_hooks" : [printProgress],
-        "postprocessor_hooks" : [ytdl_gcext_audioconverter.convertFile],
+        "postprocessor_hooks" : [convertFile],
         "paths": { 
             "home" : downloadPath
         },
@@ -145,14 +171,12 @@ def main():
             print("EXTENSION-CALL:", not localEx, file=f)
             print("GRANDPARENT-PROCESS:", psutil.Process(os.getpid()).parent().parent().name(), file=f)
             print(file=f)
-
-        msg = "READ MESSAGE"
         errorcode = None
 
         def handleException(exception, newStatus, newErrorCode):
             nonlocal status; status = newStatus
             nonlocal errorcode; errorcode = newErrorCode
-            nonlocal msg; msg = str(exception)
+            nonlocal result; result = str(exception)
 
             with open(currentLogFile, "a") as f:
                 traceback.print_exc(file=f)
@@ -164,26 +188,31 @@ def main():
             try:
                 # Warten auf eine Nachricht von der Extension
                 status = "READING_MESSAGE"
-                msg = read_message()
+                receivedMessage = read_message()
             except JSONDecodeError as e:
                 handleException(e, newStatus="READ_ERROR", newErrorCode="INVALID_JSON")
             else:
                 status = "READ_SUCCESS"
-                log("Received Message:", msg)
+                log("Received Message:", receivedMessage)
             
             status="PROCESSING_DATA"
             
-            result = process_message(msg)
-            
-            status = "DATA_PROCESSED"
+            try: 
+                result = process_message(receivedMessage)
+            except Exception as e:
+                handleException(e, newStatus="FAILURE", newErrorCode="PROCESS_ERROR")
+                result = str(e)
+            else: 
+                status = "SUCCESS"
 
 
             response = {
+                "type": "END:" + receivedMessage.get("type"),
                 "status": status,
                 "message": result
             }
 
-            if msg.get("PURPOSE") == "YT-DLP":
+            if receivedMessage.get("type") == "YT-DLP":
                 response["yt-dlp.out"] = ytdlpOutFile
 
             if errorcode:
@@ -194,11 +223,12 @@ def main():
             handleException(f, newStatus="DONT KNOW BUT PROLLY NO RESP SENT", newErrorCode="HIGH_LEVEL_ERROR")
 
             response = {
+                "type": "END:YT-DLP",
                 "status": status,
                 "message": ""
             }
 
-            if msg.get("PURPOSE") == "YT-DLP":
+            if receivedMessage.get("PURPOSE") == "YT-DLP":
                 response["yt-dlp.out"] = ytdlpOutFile
 
             if errorcode:

@@ -3,18 +3,54 @@
 <html>
 <head>
 	<style>
-		html {
+		html, body {
 			min-height: 5em;
-			min-width: 10em;
-			/*background: salmon;*/
+			min-width: 11em;
+			width: fit-content;
 		}
+
+		#downloads {
+			display: flex;
+			flex-direction: column; 
+			/*gap: 10px;*/
+			overflow-y: auto;
+			overflow-x: hidden;
+			max-height: 200px;
+			max-width: fit-content;
+
+			>div:has(+ div) {
+				border-bottom: 1px solid gray;
+			}
+		}
+
+		.description, .status {
+			display: flex;
+			flex-direction: row;    
+			gap: 10px;              
+		}
+
 	</style>
 </head>
 <body>
-	<script src="popup.js"></script>
+	<script src="popup.js" type="module"></script>
 	<form id="download-form">
 		<select id="format"></select>
-		<button id="submit-download">DOWNLOAD</button>
+		<button type="button" id="submit-download">DOWNLOAD</button>
 	</form>
+	<h3>Downloads</h3>
+	<div id="downloads">
+		<!-- example download
+		<div id="8664d1be-87c0-40d6-bdaf-b2158cb08db2">
+			<div class="description">
+				<div class="format">mp3</div>
+				<div class="title"></div>
+			</div>
+			<div class="status">
+				<div class="state">DOWNLOAD</div>
+				<div class="progress">STARTED</div>
+			</div>
+		</div>
+		-->
+	</div>
 </body>
 </html>

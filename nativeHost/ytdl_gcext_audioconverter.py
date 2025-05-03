@@ -33,6 +33,9 @@ CODEC_BITRATES = {
 destinationFormat = "'NO FORMAT SET'"
 
 def convertFile(ctx):
+    """
+    Converts a file out of a yt-dlp context ctx after other postprocessing is finished.
+    """
     currentFormat = ctx.get("info_dict", {}).get("ext")
     if ctx.get("postprocessor") == "MoveFiles" and ctx.get("status") == "finished" and currentFormat != destinationFormat:
         log("Start conversion to " + destinationFormat)

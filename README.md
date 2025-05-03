@@ -1,7 +1,16 @@
 # YT-DL-ChromeExt
-Chrome Extension for YT-DL
+Chrome Extension for a [audio/video downloader with support for thousands of sites](https://github.com/yt-dlp/yt-dlp)
 
-#setup
+# ⚠️ Legal Notice
+This software is provided for educational and personal use only. It is intended to download or process media only when the user has the legal right to do so, such as content that is public domain, licensed under Creative Commons, or owned by the user.
+
+The developers of this software do not endorse or encourage the downloading of copyrighted materials without permission. You are solely responsible for ensuring that your use of this software complies with applicable laws, terms of service, and copyright restrictions.
+
+By using this software, you agree to take full responsibility for your actions and any consequences that may arise from them.
+
+
+
+# Setup
 1. Download this project (https://github.com/Furock/YT-DL-ChromeExt/archive/refs/heads/main.zip) and unzip it.
 2. Load the extension in chrome
 	2.1. Open chrome and view its extensions (chrome://extensions/).

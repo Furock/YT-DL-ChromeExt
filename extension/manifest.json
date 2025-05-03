@@ -21,7 +21,7 @@
 		"default_popup": "popup/popup.html"
 	},
 	"background": {
-		"service_worker": "background.js"
-	},
-	"update_url" : "https://raw.githubusercontent.com/Furock/YT-DL-ChromeExt/refs/heads/release/1/extension/update.xml"
+		"service_worker": "background.js",
+		"type": "module"
+	}
 }
