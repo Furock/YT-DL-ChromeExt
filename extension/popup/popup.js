@@ -1,36 +1,32 @@
 import { Download } from "../shared/download.js"
+import { YtdlpCache } from "../shared/ytdlpcache.js";
+
 //__init___Code that is executed in the beginning__________________________________________________________________
+
 let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
 let currentTab = null
-let port = null;
 if (tabs.length != 1) {
     console.error("Not exactly one active tab in this window, but" + tabs.length)
     alert("Ein Fehler ist aufgetreten. Es wurden " + tabs.length + " Tabs erkannt. Bitte versuche es erneut oder starte Chrome neu.")
 } else {
     currentTab = tabs[0]
-    port = chrome.runtime.connect({
-        name: currentTab.title
-    })
 }
+
+let connected = false;
+let port = getNewPort();
+
+
+
 
 let pendingResponses = {};
 //Handle incoming messages
-port.onMessage.addListener((msg) => {
-    //console.log("Received Message from ", port.sender)
-    console.log("Received message: ", msg)
-    if (pendingResponses[msg.id]) {
-        pendingResponses[msg.id](msg.payload)
-        delete pendingResponses[msg.id]
-    } else {
-        if (msg.type === "UPDATE") {
-            update(msg.payload)
-        }
-    }
-})
 
 document.getElementById("submit-download").addEventListener("click", download)
+document.getElementById("downloadPathButton").addEventListener("click", setDownloadPath)
 
 getFormats()
+
+getCurrentDownloadPath()
 
 let hasAddedDownloadHeader = false;
 
@@ -45,9 +41,41 @@ function log(...data) {
     })
 }
 
+function getNewPort() {
+    let port = chrome.runtime.connect({
+        name: currentTab.title
+    })
+    connected = true;
+
+    port.onDisconnect.addListener(() => {
+        connected = false
+    })
+
+    port.onMessage.addListener((msg) => {
+        //console.log("Received Message from ", port.sender)
+        console.log("Received message: ", msg)
+        if (pendingResponses[msg.id]) {
+            pendingResponses[msg.id](msg.payload)
+            delete pendingResponses[msg.id]
+        } else {
+            if (msg.type === "UPDATE") {
+                update(msg.payload)
+            }
+        }
+    })
+    return port;
+}
+
+function getPort() {
+    if (!connected) {
+        port = getNewPort() 
+    }
+    return port;
+}
+
 function forwardToBackground(obj) {
     obj.id = crypto.randomUUID()
-    port.postMessage(obj);
+    getPort().postMessage(obj);
     //return obj.id
 }
 
@@ -66,14 +94,32 @@ function sendGet(method) {
 }
 
 async function getFormats() {
-    let response = await sendGet("GetFormats")
+    let defaultFormat = (await YtdlpCache.get(YtdlpCache.KEYS.DEFAULT_FORMAT))[YtdlpCache.KEYS.DEFAULT_FORMAT]
+
+    /**
+     * @type String[]
+     */
+    let formats = (await YtdlpCache.get(YtdlpCache.KEYS.FORMATS))[YtdlpCache.KEYS.FORMATS]
+    if (!formats) {
+        formats = await sendGet("GetFormats")
+    }
         
-    response.forEach(format => {
+    formats.forEach(format => {
         let option = document.createElement("option")
         option.value = format
         option.innerText = format
         document.getElementById("format").appendChild(option)
     })
+
+    if (formats.includes(defaultFormat)) {
+        document.getElementById("format").value = defaultFormat
+    }
+
+    if (formats.length > 0) {
+        let popup = document.getElementById("download-popup");
+        popup.classList.remove("hidden")
+    }
+    
 }
 
 /**
@@ -111,12 +157,17 @@ function createDownloadElement(downloadObj) {
 
     if (!hasAddedDownloadHeader) {
         let header = document.createElement("h3")
+        header.style.marginBottom="unset"
+        header.style.borderBottom="1px solid black"
+        header.style.marginTop="0.5em"
         header.innerText = "Downloads"
         downloads.before(header)
         hasAddedDownloadHeader = true
+
+        //document.getElementById("downloadPathPlaceholder").style.height = "1px"
     }
     
-    let download = createElement("div", null, null, downloads)
+    let download = createElement("div", "download", null, downloads)
     download.id = downloadObj.id
 
     let description = createElement("div", "description", "", download)
@@ -142,10 +193,12 @@ async function getDownloads() {
 }
 
 function download() {
+    let format = document.getElementById("format").value;
+    YtdlpCache.set(YtdlpCache.KEYS.DEFAULT_FORMAT, format)
     let message = {
         "type": "YT-DLP",
         "payload": {
-            "audio-format" : document.getElementById("format").value,
+            "audio-format" : format,
             "url" : currentTab.url,
             "tabTitle": currentTab.title
         }
@@ -172,7 +225,6 @@ function update(downloadObj) {
         let progressElements = downloadElement.getElementsByClassName("progress")
         let progressElement = progressElements.item(progressElements.length-1)
         
-        log(downloadObj.title, titleElement.innerText)
         if (downloadObj.title && (titleElement.innerText === "" || titleElement.innerText !== downloadObj.title)) {
             titleElement.innerText = downloadObj.title
         }
@@ -195,4 +247,22 @@ function update(downloadObj) {
             createElement("div", "progress", downloadObj.progress, newStatus)
         }
     }
+}
+
+async function getCurrentDownloadPath() {
+    /**
+     * @type String
+     */
+    let path = (await YtdlpCache.get(YtdlpCache.KEYS.DOWNLOAD_PATH))[YtdlpCache.KEYS.DOWNLOAD_PATH]
+    if (!path || path.trim().length == 0) {
+        path = await sendGet("GetDownloadPath")
+    }
+    document.getElementById("downloadPath").innerText = path
+    //document.getElementById("downloadPathPlaceholder").innerText = path
+}
+
+async function setDownloadPath() {
+    let path = await sendGet("SetDownloadPath")
+    document.getElementById("downloadPath").innerText = path
+    //document.getElementById("downloadPathPlaceholder").innerText = path
 }

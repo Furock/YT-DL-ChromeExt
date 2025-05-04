@@ -1,4 +1,5 @@
 import sys
+import tkinter.filedialog
 import psutil
 import json
 import datetime
@@ -6,6 +7,9 @@ import os, os.path
 import traceback
 import tempfile
 import logging
+from tkinter import Tk
+from tkinter import filedialog
+from configparser import ConfigParser
 from json.decoder import JSONDecodeError
 from yt_dlp import YoutubeDL
 
@@ -17,9 +21,9 @@ import ytdl_gcext_audioconverter
 localEx = psutil.Process(os.getpid()).parent().parent().name() not in  ["chrome.exe"]
 debugMessage = {
             "type": "YT-DLP",
+            #"type": "SetDownloadPath",
             "payload": {
                 "audio-format" : "mp3",
-                "downloadPath" : "C:\\Users\\renen\\Downloads\\YT-DLP",
                 "url" : "http://localhost:8000/vehicle.mp4"
             }
         }
@@ -37,18 +41,26 @@ def getExistingDir(*pathElements):
     return path
 
 tempDir = getExistingDir(tempfile.gettempdir(), "YT-DL_GCEXT")
-executionTempDir = getExistingDir(tempDir, executionStartForFilename)
+configFile = os.path.join(tempDir, "config.ini")
+executionsTempDir = getExistingDir(tempDir, "executions") 
+executionTempDir = getExistingDir(executionsTempDir, executionStartForFilename)
 logDir = getExistingDir(executionTempDir, "logs")
 currentLogFile = os.path.join(logDir, "native-host.log")
 ytdl_gcext_logger.defaultLog = currentLogFile
 ytdl_gcext_logger.alsoLogToStdout = localEx
 
 extensionLogFile = os.path.join(logDir, "extension.log")
-downloadsDir = getExistingDir(os.path.expanduser("~"), "Downloads", "YT-DLP")
-if os.name == "nt" and downloadsDir[0] == "~": downloadsDir = None
 ytdlpOutFile = os.path.join(logDir, "ytdlpProcess.txt")
-tempDownload = getExistingDir(executionTempDir, "downloads")
+#tempDownload = getExistingDir(executionTempDir, "downloads")
 allLogFile = os.path.join(tempDir, "results.log")
+
+config = ConfigParser()
+config.read(configFile)
+defaultDownloadsDir = getExistingDir(os.path.expanduser("~"), "Downloads", "YT-DLP")
+if os.name == "nt" and defaultDownloadsDir[0] == "~": downloadsDir = None
+downloadsDir = config.get(section="settings", option="download_path", fallback="")
+if downloadsDir == "":
+    downloadsDir = defaultDownloadsDir
 
 def read_message():
 
@@ -107,9 +119,6 @@ def convertFile(ctx):
 def ytdlp(body):
     ytdl_gcext_audioconverter.destinationFormat = body.get("audio-format", "mp3")
 
-    msgDownloadPath = body.get("downloadPath", "").strip()
-    downloadPath = msgDownloadPath if len(msgDownloadPath) > 0 else downloadsDir
-    
     with YoutubeDL({
         "format": "bestaudio/best",
         "windowsfilenames" : os.name == "nt",
@@ -121,7 +130,7 @@ def ytdlp(body):
         "progress_hooks" : [printProgress],
         "postprocessor_hooks" : [convertFile],
         "paths": { 
-            "home" : downloadPath
+            "home" : downloadsDir
         },
         "logger": ytdl_gcext_logger.getLogger(ytdlpOutFile),
         "keepvideo": True
@@ -136,6 +145,19 @@ def process_message(message):
         return [v for v in ytdl_gcext_audioconverter.FORMAT_CODECS]
     elif type == "YT-DLP":
         ytdlp(message.get("payload"))
+    elif type == "SetDownloadPath":
+        root = Tk()
+        root.withdraw()
+        path = filedialog.askdirectory(title="Wähle das gewünschte Downloadverzeichnis (default: Downloads/YT-DLP)", initialdir=downloadsDir)
+        if (path and len(path.strip()) != 0):
+            if not config.has_section("settings"): config.add_section("settings")
+            config.set("settings", "download_path", path)
+            with open(configFile, "w") as f:
+                config.write(f)
+        return path
+    elif type == "GetDownloadPath":
+        return downloadsDir
+
     else:
         log(f"Request {type} unknown", level = logging.ERROR)
 

@@ -4,9 +4,57 @@
 <head>
 	<style>
 		html, body {
-			min-height: 5em;
-			min-width: 11em;
-			width: fit-content;
+			min-width: 20em
+		}
+
+		body {
+			display: flex;
+			flex-direction: column;
+			background-color: red;
+			height: 100%;
+		}
+
+		.hidden {
+			visibility: hidden;
+		}
+
+		#download-popup {
+			display: flex;
+			flex-direction: column;
+			background-color: white;
+			border-radius: 2em;
+			padding: 1em;
+			padding-bottom: 3em;
+			height: 100%;
+		}
+
+		button, select {
+			border-radius: 1em;
+			padding: 0.25em 0.5em;
+		}
+
+		#format {
+			border-top-right-radius: 0;
+			border-bottom-right-radius: 0;
+		}
+
+		#submit-download {
+			border-top-left-radius: 0;
+			border-bottom-left-radius: 0;
+			padding-right: 0.75em;
+		}
+
+		#downloadPathButton {
+			padding: 0.375em 0.75em;
+		}
+
+		button {
+			border: 1px solid black;
+		}
+
+		#download-form {
+			display: flex;
+			flex-direction: row;
 		}
 
 		#downloads {
@@ -29,27 +77,63 @@
 			gap: 10px;              
 		}
 
+		#downloadPathContainer {
+			position: relative;
+		}
+
+		#downloadPath {
+			visibility: hidden;
+			border-radius: 1em;
+			border: 1px solid black;
+			padding: 4px 8px;
+			background-color: white;
+			position: absolute;
+			z-index: 1;
+			max-width: 100%;
+			box-sizing: border-box;
+			word-wrap: break-word;
+		}
+
+		#downloadPathButton:hover + #downloadPath {
+			visibility: visible;
+		}
+
+		.download {
+			margin-top: 0.5em;
+			padding-bottom: 0.5em;
+		}
+
 	</style>
 </head>
 <body>
 	<script src="popup.js" type="module"></script>
-	<form id="download-form">
-		<select id="format"></select>
-		<button type="button" id="submit-download">DOWNLOAD</button>
-	</form>
-	<div id="downloads">
-		<!-- example download
-		<div id="8664d1be-87c0-40d6-bdaf-b2158cb08db2">
-			<div class="description">
-				<div class="format">mp3</div>
-				<div class="title"></div>
-			</div>
-			<div class="status">
-				<div class="state">DOWNLOAD</div>
-				<div class="progress">STARTED</div>
+	<div id="download-popup" class="hidden">
+		<div class="meta">
+			<form id="download-form">
+				<select id="format"></select>
+				<button type="button" id="submit-download">Download</button>
+			</form>
+			<div id = downloadPathContainer>
+				<button type="button" id="downloadPathButton">Downloadpfad</button>
+				<div id="downloadPath"></div>
 			</div>
 		</div>
-		-->
+		<div id="downloads">
+			<!-- example download
+			<div id="8664d1be-87c0-40d6-bdaf-b2158cb08db2" class="download">
+				<div class="description">
+					<div class="format">mp3</div>
+					<div class="title"></div>
+				</div>
+				<div class="status">
+					<div class="state">DOWNLOAD</div>
+					<div class="progress">STARTED</div>
+				</div>
+			</div>
+			-->
+		</div>
 	</div>
+	<div id="setup-popup" class="hidden"></div>
+	
 </body>
 </html>

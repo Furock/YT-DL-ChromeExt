@@ -9,7 +9,7 @@
 		"48": "assets/icon48.png",
 		"128": "assets/icon128.png"
 	},
-	"permissions": ["activeTab", "scripting", "contentSettings", "nativeMessaging"],
+	"permissions": ["activeTab", "scripting", "contentSettings", "nativeMessaging", "storage"],
 	"action": {
 		"default_title": "Klicke um Download Dialog zu öffnen.",
 		"default_icon": {
