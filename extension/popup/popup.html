@@ -103,6 +103,12 @@
 			padding-bottom: 0.5em;
 		}
 
+		#downloadsHeader {
+			margin-bottom: unset;
+			border-bottom: 1px solid black;
+			margin-top: 0.5em
+		}
+
 	</style>
 </head>
 <body>
@@ -111,13 +117,14 @@
 		<div class="meta">
 			<form id="download-form">
 				<select id="format"></select>
-				<button type="button" id="submit-download">Download</button>
+				<button type="button" id="submit-download"></button>
 			</form>
 			<div id = downloadPathContainer>
-				<button type="button" id="downloadPathButton">Downloadpfad</button>
+				<button type="button" id="downloadPathButton"></button>
 				<div id="downloadPath"></div>
 			</div>
 		</div>
+		<h3 id="downloadsHeader" class="hidden"></h3>
 		<div id="downloads">
 			<!-- example download
 			<div id="8664d1be-87c0-40d6-bdaf-b2158cb08db2" class="download">

@@ -6,8 +6,8 @@ import { YtdlpCache } from "../shared/ytdlpcache.js";
 let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
 let currentTab = null
 if (tabs.length != 1) {
-    console.error("Not exactly one active tab in this window, but" + tabs.length)
-    alert("Ein Fehler ist aufgetreten. Es wurden " + tabs.length + " Tabs erkannt. Bitte versuche es erneut oder starte Chrome neu.")
+    console.error(chrome.i18n.getMessage("notOneTab", String(tabs.length)), tabs)
+    alert(chrome.i18n.getMessage("notOneTab", String(tabs.length)))
 } else {
     currentTab = tabs[0]
 }
@@ -15,22 +15,12 @@ if (tabs.length != 1) {
 let connected = false;
 let port = getNewPort();
 
-
-
-
 let pendingResponses = {};
 //Handle incoming messages
 
-document.getElementById("submit-download").addEventListener("click", download)
-document.getElementById("downloadPathButton").addEventListener("click", setDownloadPath)
-
-getFormats()
-
-getCurrentDownloadPath()
-
 let hasAddedDownloadHeader = false;
 
-getDownloads()
+init()
 
 //__method_declarations________________________________________________________________________________________
 function log(...data) {
@@ -115,11 +105,7 @@ async function getFormats() {
         document.getElementById("format").value = defaultFormat
     }
 
-    if (formats.length > 0) {
-        let popup = document.getElementById("download-popup");
-        popup.classList.remove("hidden")
-    }
-    
+    return formats;
 }
 
 /**
@@ -155,17 +141,9 @@ function createElement(tagName, classes, innerText, parent) {
 function createDownloadElement(downloadObj) {
     let downloads = document.getElementById("downloads")
 
-    if (!hasAddedDownloadHeader) {
-        let header = document.createElement("h3")
-        header.style.marginBottom="unset"
-        header.style.borderBottom="1px solid black"
-        header.style.marginTop="0.5em"
-        header.innerText = "Downloads"
-        downloads.before(header)
-        hasAddedDownloadHeader = true
-
-        //document.getElementById("downloadPathPlaceholder").style.height = "1px"
-    }
+    let header = document.getElementById("downloadsHeader") 
+    header.classList.remove("hidden")
+    if (header.innerText === "") header.innerText = chrome.i18n.getMessage("downloads")
     
     let download = createElement("div", "download", null, downloads)
     download.id = downloadObj.id
@@ -265,4 +243,29 @@ async function setDownloadPath() {
     let path = await sendGet("SetDownloadPath")
     document.getElementById("downloadPath").innerText = path
     //document.getElementById("downloadPathPlaceholder").innerText = path
+}
+
+async function init() {
+    let formats = await getFormats()
+
+    console.log(formats)
+    console.log(formats && formats.length > 0)
+
+    if (formats && formats.length > 0) {
+        document.getElementById("submit-download").addEventListener("click", download)
+        document.getElementById("downloadPathButton").addEventListener("click", setDownloadPath)
+
+        getCurrentDownloadPath()
+        getDownloads()
+
+        document.getElementById("submit-download").innerText = chrome.i18n.getMessage("download")
+        document.getElementById("downloadPathButton").innerText = chrome.i18n.getMessage("downloadPath")
+
+        let popup = document.getElementById("download-popup");
+        popup.classList.remove("hidden")
+    } else {
+
+    }
+
+    
 }

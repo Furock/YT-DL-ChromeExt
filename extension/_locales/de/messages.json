@@ -1,0 +1,44 @@
+{
+    "extName": {
+        "message":"YT-DLP-EXT-Audio"
+    },
+    "extDescription" : {
+        "message":"Audio downloader (funktioniert für viele Seiten)"
+    },
+    "actionTitle": {
+        "message": "Klicke um Download Dialog zu öffnen."
+    },
+    "downloadPath": {
+        "message": "Downloadpfad"
+    },
+    "notOneTab" : {
+        "message": "Ein Fehler ist aufgetreten. Es wurden $tabCount$ Tabs erkannt. Bitte versuche es erneut oder starte Chrome neu.",
+        "placeholders": {
+            "tabCount": {
+                "content": "$1",
+                "example": "2"
+            }
+        }
+    },
+    "extraction": {
+        "message": "Extrahieren"
+    },
+    "conversion": {
+        "message": "Konvertieren"
+    },
+    "finished" : {
+        "message": "Abgeschlossen"
+    },
+    "aborted" : {
+        "message": "Abgebrochen"
+    },
+    "pending" : {
+        "message": "Ausstehend"
+    },
+    "inProgress": {
+        "message": "Läuft"
+    },
+    "error" : {
+        "message": "Error"
+    }
+}

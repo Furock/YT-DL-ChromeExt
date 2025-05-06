@@ -1,0 +1,51 @@
+{
+    "extName": {
+        "message":"YT-DLP-EXT-Audio"
+    },
+    "extDescription" : {
+        "message":"Audio downloader (with support for many sites)"
+    },
+    "actionTitle": {
+        "message": "Click to open download dialog"
+    },
+    "downloadPath": {
+        "message": "Download Path"
+    },
+    "download": {
+        "message": "Download"
+    },
+    "downloads": {
+        "message": "Downloads"
+    },
+    "notOneTab" : {
+        "message": "An error has occured. There were $tabCount$ tabs recognized instead of one. Please try again or restart chrome.",
+        "placeholders": {
+            "tabCount": {
+                "content": "$1",
+                "example": "2"
+            }
+        }
+    },
+    "extraction": {
+        "message": "Extracting"
+    },
+    "conversion": {
+        "message": "Converting"
+    },
+    "finished" : {
+        "message": "Finished"
+    },
+    "aborted" : {
+        "message": "Aborted"
+    },
+    "pending" : {
+        "message": "Pending"
+    },
+    "inProgress": {
+        "message": "In Progress"
+    },
+    "error" : {
+        "message": "Error"
+    }
+
+}

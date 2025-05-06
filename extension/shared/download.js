@@ -1,18 +1,18 @@
 export class Download {
 
     static State = {
-        DOWNLOAD  : "Download", 
-        EXTRACTION: "Extrahieren",
-        CONVERSION: "Konvertieren",
-        FINISHED  : "Abgeschlossen",
-        ABORTED   : "Abgebrochen: Fehler"
-    }
+        DOWNLOAD  : chrome.i18n.getMessage("download"), 
+        EXTRACTION: chrome.i18n.getMessage("extraction"),
+        CONVERSION: chrome.i18n.getMessage("conversion"),
+        FINISHED: chrome.i18n.getMessage("finished"),
+        ABORTED: chrome.i18n.getMessage("aborted")
+    }									
 
-    static Progress = {
-        PENDING: "Ausstehend",
-        INPROGRESS: "Läuft",
-        FINISHED: "Abgeschlossen",
-        ERROR: "Error"
+    static Progress = {					
+        PENDING: chrome.i18n.getMessage("pending"),
+        INPROGRESS: chrome.i18n.getMessage("inProgress"),
+        FINISHED: chrome.i18n.getMessage("finished"),
+        ERROR: chrome.i18n.getMessage("error")
     }
 
     /**
