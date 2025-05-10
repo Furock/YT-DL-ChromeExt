@@ -70,19 +70,19 @@ chrome.runtime.onConnect.addListener((port) => {
 				log("POPUP:", ...(msg.payload))
 				break;
 
-			case "GetDownloadPath":
-				let getDownloadPathResp = await send(msg.type, msg.id, msg.payload)
-				log("Response from native host:", getDownloadPathResp)
-				let receivedPath = getDownloadPathResp["message"]
-				send("RESP:" + msg.type, msg.id, receivedPath, port)
-				YtdlpCache.set(YtdlpCache.KEYS.DOWNLOAD_PATH, receivedPath)
-				break;
+			// case "GetDownloadPath":
+			// 	let getDownloadPathResp = await send(msg.type, msg.id, msg.payload)
+			// 	log("Response from native host:", getDownloadPathResp)
+			// 	let receivedPath = getDownloadPathResp["message"]
+			// 	send("RESP:" + msg.type, msg.id, receivedPath, port)
+			// 	YtdlpCache.set(YtdlpCache.KEYS.DOWNLOAD_PATH, receivedPath)
+			// 	break;
 			case "SetDownloadPath":
 				let resp = await send(msg.type, msg.id, msg.payload)
 				log("Response from native host:", resp)
 				let path = resp["message"]
 				send("RESP:" + msg.type, msg.id, path, port)
-				YtdlpCache.set(YtdlpCache.KEYS.DOWNLOAD_PATH, path)
+				//YtdlpCache.set(YtdlpCache.KEYS.DOWNLOAD_PATH, path)
 				break;
 			default:
 				error("Received message with unknown message type " + msg["type"])

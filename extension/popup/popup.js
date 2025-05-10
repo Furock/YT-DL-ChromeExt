@@ -227,35 +227,32 @@ function update(downloadObj) {
     }
 }
 
-async function getCurrentDownloadPath() {
-    /**
-     * @type String
-     */
-    let path = (await YtdlpCache.get(YtdlpCache.KEYS.DOWNLOAD_PATH))[YtdlpCache.KEYS.DOWNLOAD_PATH]
-    if (!path || path.trim().length == 0) {
-        path = await sendGet("GetDownloadPath")
-    }
-    document.getElementById("downloadPath").innerText = path
-    //document.getElementById("downloadPathPlaceholder").innerText = path
-}
+// async function getCurrentDownloadPath() {
+//     /**
+//      * @type String
+//      */
+//     let path = (await YtdlpCache.get(YtdlpCache.KEYS.DOWNLOAD_PATH))[YtdlpCache.KEYS.DOWNLOAD_PATH]
+//     if (!path || path.trim().length == 0) {
+//         path = await sendGet("loadPath")
+//     }
+//     document.getElementById("downloadPath").innerText = path
+// }
 
 async function setDownloadPath() {
     let path = await sendGet("SetDownloadPath")
-    document.getElementById("downloadPath").innerText = path
-    //document.getElementById("downloadPathPlaceholder").innerText = path
+    //document.getElementById("downloadPath").innerText = path
 }
 
 async function init() {
     let formats = await getFormats()
 
     console.log(formats)
-    console.log(formats && formats.length > 0)
 
     if (formats && formats.length > 0) {
         document.getElementById("submit-download").addEventListener("click", download)
         document.getElementById("downloadPathButton").addEventListener("click", setDownloadPath)
 
-        getCurrentDownloadPath()
+        //getCurrentDownloadPath()
         getDownloads()
 
         document.getElementById("submit-download").innerText = chrome.i18n.getMessage("download")

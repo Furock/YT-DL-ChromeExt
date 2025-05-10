@@ -3,7 +3,7 @@ export class YtdlpCache {
     static KEYS = {
         DEFAULT_FORMAT: "defaultFormat",
         FORMATS: "formats",
-        DOWNLOAD_PATH : "downloadPath"
+        //DOWNLOAD_PATH : "downloadPath"
     }
 
     /**
@@ -49,14 +49,14 @@ export class YtdlpCache {
     }
 
     static clear() {
-        // some data shall persist clearing like downloadPath
-        YtdlpCache.get([
-            YtdlpCache.KEYS.DOWNLOAD_PATH
-        ]).then(shallPersist => {
-            chrome.storage.local.clear();
-            chrome.storage.local.set(shallPersist);
-        })
-
+        // // some data shall persist clearing like downloadPath
+        // YtdlpCache.get([
+        //     YtdlpCache.KEYS.DOWNLOAD_PATH
+        // ]).then(shallPersist => {
+        //     chrome.storage.local.clear();
+        //     chrome.storage.local.set(shallPersist);
+        // })
+        chrome.storage.local.clear();
         
     }
 

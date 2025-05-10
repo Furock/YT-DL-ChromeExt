@@ -154,9 +154,9 @@ def process_message(message):
             config.set("settings", "download_path", path)
             with open(configFile, "w") as f:
                 config.write(f)
-        return path
-    elif type == "GetDownloadPath":
-        return downloadsDir
+        return True#path
+    # elif type == "GetDownloadPath":
+    #     return downloadsDir
 
     else:
         log(f"Request {type} unknown", level = logging.ERROR)
