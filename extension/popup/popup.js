@@ -261,6 +261,21 @@ async function init() {
         document.getElementById("submit-download").innerText = chrome.i18n.getMessage("download")
         document.getElementById("downloadPathButton").innerText = chrome.i18n.getMessage("downloadPath")
 
+        let coll = document.getElementById("optionsButton");
+        coll.innerText = chrome.i18n.getMessage("options")
+        coll.addEventListener("click", function() {
+            
+            let content = coll.nextElementSibling;
+            coll.classList.toggle("active");
+            content.classList.toggle("active");
+            if (content.style.maxHeight){
+                content.style.maxHeight = null;
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        })
+        
+
         let popup = document.getElementById("download-popup");
         popup.classList.remove("hidden")
     } else {

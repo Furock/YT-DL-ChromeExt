@@ -3,29 +3,54 @@
 <html>
 <head>
 	<style>
+		:root {
+			--padding: 1em;
+			--button-color: #eee;
+		}
+
 		html, body {
 			min-width: 20em
 		}
 
 		body {
-			display: flex;
-			flex-direction: column;
 			background-color: red;
-			height: 100%;
+
+			div:has(+ div) {
+				margin-bottom: var(--padding);
+			}
 		}
 
 		.hidden {
 			visibility: hidden;
 		}
 
+		.container {
+			overflow: hidden;
+			padding: var(--padding);
+
+			.container {
+				padding: var(--padding) 0;
+			}
+		}
+
 		#download-popup {
-			display: flex;
-			flex-direction: column;
 			background-color: white;
 			border-radius: 2em;
-			padding: 1em;
-			padding-bottom: 3em;
-			height: 100%;
+			height: fit-content;
+		}
+
+		#meta {
+			padding: 0;
+		}
+
+		button {
+			background-color: var(--button-color);
+			border: 1px solid black;
+			cursor: pointer;
+		}
+
+		button:hover {
+			background-color: #ccc;
 		}
 
 		button, select {
@@ -36,20 +61,18 @@
 		#format {
 			border-top-right-radius: 0;
 			border-bottom-right-radius: 0;
+			margin-right: 0;
 		}
 
 		#submit-download {
 			border-top-left-radius: 0;
 			border-bottom-left-radius: 0;
 			padding-right: 0.75em;
+			margin-left: 0;
 		}
 
 		#downloadPathButton {
 			padding: 0.375em 0.75em;
-		}
-
-		button {
-			border: 1px solid black;
 		}
 
 		#download-form {
@@ -64,11 +87,17 @@
 			overflow-y: auto;
 			overflow-x: hidden;
 			max-height: 200px;
-			max-width: fit-content;
+			width: 100%;
 
-			>div:has(+ div) {
+			> div:has(+ div) {
 				border-bottom: 1px solid gray;
 			}
+
+			div:has(+ div) {
+				margin-bottom: auto;
+			}
+
+
 		}
 
 		.description, .status {
@@ -109,20 +138,77 @@
 			margin-top: 0.5em
 		}
 
+		#optionsButton {
+			border: none;
+			width: 100%;
+			text-align: left;
+			margin: 0;
+		}
+
+		.collapsible {
+			transition: border-radius 0.2s ease-out 0.1s;
+		}
+
+		.collapsible.active {
+ 			background-color: #bbb;
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
+		}
+
+		#options {
+			max-height: 0;
+			overflow: hidden;
+			transition: max-height 0.2s ease-out, border-radius 0.2s ease-out 0.1s;
+			background-color: var(--button-color);
+			padding-left: var(--padding);
+			border-radius: 1em;
+		}
+
+		#options.active {
+			border-top-right-radius: 0;
+			border-top-left-radius: 0;
+		}
+
+		.collapsible::before {
+			content: '\25c7 '; /* Unicode character for pointer right */
+			padding: 0.5em;
+		}
+
+		.collapsible.active::before {
+			content: '\25c8 '; /* Unicode character for pointer down */
+		}
+
+		.circle {
+			border-radius: 50%;
+		}
+
+		#downloadPathButton {
+			background-color: #fff;
+		}
+
+		#downloadPathButton:hover {
+			background-color: #ccc;
+		}
+
 	</style>
 </head>
 <body>
 	<script src="popup.js" type="module"></script>
-	<div id="download-popup" class="hidden">
+	<div id="download-popup" class="hidden container">
 		<div class="meta">
-			<form id="download-form">
+			<div id = "optionsContainer">
+				<button id="optionsButton" class="collapsible"></button>
+				<div id="options">
+					<div id = "downloadPathContainer" class = "container">
+						<button type="button" id="downloadPathButton"></button>
+						<div id="downloadPath"></div>
+					</div>
+				</div>
+			</div>
+			<form id="download-form" class="container">
 				<select id="format"></select>
 				<button type="button" id="submit-download"></button>
 			</form>
-			<div id = downloadPathContainer>
-				<button type="button" id="downloadPathButton"></button>
-				<div id="downloadPath"></div>
-			</div>
 		</div>
 		<h3 id="downloadsHeader" class="hidden"></h3>
 		<div id="downloads">

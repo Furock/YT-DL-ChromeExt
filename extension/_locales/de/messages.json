@@ -40,5 +40,8 @@
     },
     "error" : {
         "message": "Error"
+    },
+    "options" : {
+        "message": "Optionen"
     }
 }
