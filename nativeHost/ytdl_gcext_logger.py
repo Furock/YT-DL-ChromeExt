@@ -3,8 +3,19 @@ import sys
 import inspect
 import os
 
+isLogging = False
+isDebugging = False
 defaultLog = os.path.join(".", "defaultLog.log")
 alsoLogToStdout = False
+
+NOT_LOGGING_LOGGER=logging.getLogger("None")
+
+def on(on=True):
+    global isLogging; isLogging=on
+
+def debug(on=True):
+    global isDebugging; isDebugging=on
+
 
 def getLogger(logfile=defaultLog) -> logging.Logger:
     logger = logging.getLogger(logfile)
@@ -36,9 +47,18 @@ def getLogger(logfile=defaultLog) -> logging.Logger:
 
 
 def log(*values, **kwargs):
-    values = (inspect.stack()[1].function, "-") + values
-    if kwargs.get("level") == None: kwargs["level"] = logging.INFO
-    logger = getLogger(kwargs.pop("file", defaultLog))
-    msg = ' '.join([str(v) for v in values])
-    logger.log(msg=msg, **kwargs)
+    if isLogging:
+        values = (inspect.stack()[1].function, "-") + values
+        if kwargs.get("level") == None: kwargs["level"] = logging.INFO
+        logger = getLogger(kwargs.pop("file", defaultLog))
+        msg = ' '.join([str(v) for v in values])
+        logger.log(msg=msg, **kwargs)
+    elif isDebugging:
+        alsoLogToStdout = False
+        logFile = kwargs.pop("file", defaultLog)
+        values = (logFile, "-", inspect.stack()[1].function, "-") + values
+        if kwargs.get("level") == None: kwargs["level"] = logging.INFO
+        logger = getLogger(defaultLog)
+        msg = ' '.join([str(v) for v in values])
+        logger.log(msg=msg, **kwargs)
     

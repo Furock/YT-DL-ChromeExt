@@ -1,5 +1,4 @@
 import sys
-import tkinter.filedialog
 import psutil
 import json
 import datetime
@@ -12,10 +11,16 @@ from tkinter import filedialog
 from configparser import ConfigParser
 from json.decoder import JSONDecodeError
 from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadError
 
 import ytdl_gcext_logger
 from ytdl_gcext_logger import log
 import ytdl_gcext_audioconverter
+
+isLogging = False
+debug = False
+ytdl_gcext_logger.on(isLogging)
+ytdl_gcext_logger.debug(debug)
 
 # if the process grandparent is chrome then it's called by the extension else it's a local execution
 localEx = psutil.Process(os.getpid()).parent().parent().name() not in  ["chrome.exe"]
@@ -42,17 +47,26 @@ def getExistingDir(*pathElements):
 
 tempDir = getExistingDir(tempfile.gettempdir(), "YT-DL_GCEXT")
 configFile = os.path.join(tempDir, "config.ini")
-executionsTempDir = getExistingDir(tempDir, "executions") 
-executionTempDir = getExistingDir(executionsTempDir, executionStartForFilename)
-logDir = getExistingDir(executionTempDir, "logs")
-currentLogFile = os.path.join(logDir, "native-host.log")
-ytdl_gcext_logger.defaultLog = currentLogFile
-ytdl_gcext_logger.alsoLogToStdout = localEx
+#currentLogFile = ytdl_gcext_logger.defaultLog
+if isLogging:
+    executionsTempDir = getExistingDir(tempDir, "executions") 
+    executionTempDir = getExistingDir(executionsTempDir, executionStartForFilename)
+    logDir = getExistingDir(executionTempDir, "logs")
+    currentLogFile = os.path.join(logDir, "native-host.log")
+    ytdl_gcext_logger.defaultLog = currentLogFile
+    ytdl_gcext_logger.alsoLogToStdout = localEx
 
-extensionLogFile = os.path.join(logDir, "extension.log")
-ytdlpOutFile = os.path.join(logDir, "ytdlpProcess.txt")
-#tempDownload = getExistingDir(executionTempDir, "downloads")
-allLogFile = os.path.join(tempDir, "results.log")
+    extensionLogFile = os.path.join(logDir, "extension.log")
+    ytdlpOutFile = os.path.join(logDir, "ytdlpProcess.txt")
+    #tempDownload = getExistingDir(executionTempDir, "downloads")
+    allLogFile = os.path.join(tempDir, "results.log")
+elif debug:
+    executionsTempDir = getExistingDir(tempDir, "executions") 
+    executionTempDir = getExistingDir(executionsTempDir, executionStartForFilename)
+    logDir = getExistingDir(executionTempDir, "logs")
+    currentLogFile = os.path.join(logDir, "debug.log")
+    ytdl_gcext_logger.defaultLog = currentLogFile
+    #ytdl_gcext_logger.alsoLogToStdout = localEx
 
 config = ConfigParser()
 config.read(configFile)
@@ -111,15 +125,12 @@ def convertFile(ctx):
             "payload": {
                 "state": "CONVERSION"
             }
-            
         })
         ytdl_gcext_audioconverter.convertFile(ctx)
-        
 
 def ytdlp(body):
     ytdl_gcext_audioconverter.destinationFormat = body.get("audio-format", "mp3")
-
-    with YoutubeDL({
+    options = {
         "format": "bestaudio/best",
         "windowsfilenames" : os.name == "nt",
         "postprocessors" : [
@@ -132,9 +143,17 @@ def ytdlp(body):
         "paths": { 
             "home" : downloadsDir
         },
-        "logger": ytdl_gcext_logger.getLogger(ytdlpOutFile),
         "keepvideo": True
-    }) as dlp:
+    }
+
+    if isLogging:
+        options["logger"] = ytdl_gcext_logger.getLogger(ytdlpOutFile)
+    elif debug:
+        options["logger"] = ytdl_gcext_logger.getLogger()
+    else:
+        options["logger"] = ytdl_gcext_logger.NOT_LOGGING_LOGGER
+
+    with YoutubeDL(options) as dlp:
         dlp.download([body.get("url")])
 
 def process_message(message):
@@ -177,7 +196,7 @@ def send_message(message):
         sys.stdout.buffer.write(lengthInBytes)
         sys.stdout.buffer.write(encoded_message)
         sys.stdout.flush()
-        log ("Sent.")
+        log("Sent.")
     else:
         log("Response to long (>=4MB)")
 
@@ -185,14 +204,12 @@ def send_message(message):
 def main():
     status = "STARTED"
     try:
-        #empty the current log at every method start
-        with open(currentLogFile, "w") as f:
-            print("START:", nowAsString(), file=f)
-            print("OS:", os.name, file=f)
-            print("PYTHON:", sys.version, file=f)
-            print("EXTENSION-CALL:", not localEx, file=f)
-            print("GRANDPARENT-PROCESS:", psutil.Process(os.getpid()).parent().parent().name(), file=f)
-            print(file=f)
+        log("START:", nowAsString())
+        log("OS:", os.name)
+        log("PYTHON:", sys.version)
+        log("EXTENSION-CALL:", not localEx)
+        log("GRANDPARENT-PROCESS:", psutil.Process(os.getpid()).parent().parent().name())
+        log("")
         errorcode = None
 
         def handleException(exception, newStatus, newErrorCode):
@@ -200,11 +217,13 @@ def main():
             nonlocal errorcode; errorcode = newErrorCode
             nonlocal result; result = str(exception)
 
-            with open(currentLogFile, "a") as f:
-                traceback.print_exc(file=f)
-                if localEx: traceback.print_exc()
-
-            log(exception, level=logging.ERROR)
+            if localEx: traceback.print_exc()
+            if isLogging:
+                with open(currentLogFile, "a") as f:
+                    traceback.print_exc(file=f)
+            elif debug: 
+                with open(ytdl_gcext_logger.defaultLog, "a") as f:
+                    traceback.print_exc(file=f)
 
         try:
             try:
@@ -221,9 +240,17 @@ def main():
             
             try: 
                 result = process_message(receivedMessage)
+            except DownloadError as e:
+                handleException(e, newStatus="FAILURE", newErrorCode="DOWNLOAD_ERROR")
+                send_message({
+                    "type": "UPDATE",
+                    "payload": {
+                        "state": "DOWNLOAD", #dict.get("status"),
+                        "progress": "ERROR"
+                    }
+                })
             except Exception as e:
                 handleException(e, newStatus="FAILURE", newErrorCode="PROCESS_ERROR")
-                result = str(e)
             else: 
                 status = "SUCCESS"
 
@@ -234,7 +261,8 @@ def main():
                 "message": result
             }
 
-            if receivedMessage.get("type") == "YT-DLP":
+
+            if isLogging and receivedMessage.get("type") == "YT-DLP":
                 response["yt-dlp.out"] = ytdlpOutFile
 
             if errorcode:
@@ -250,7 +278,7 @@ def main():
                 "message": ""
             }
 
-            if receivedMessage.get("PURPOSE") == "YT-DLP":
+            if isLogging and receivedMessage.get("PURPOSE") == "YT-DLP":
                 response["yt-dlp.out"] = ytdlpOutFile
 
             if errorcode:
@@ -270,12 +298,19 @@ def main():
             "response": response,
         }
         
-        log(json.dumps(logObj), file=allLogFile)
+        if isLogging:
+            log(json.dumps(logObj), file=allLogFile)
 
-    except Exception:
-        with open(currentLogFile, "a") as logFile:
-            traceback.print_exc(file=logFile)
-            if localEx: traceback.print_exc()
+    except Exception as e:
+        log(e, str(e), level=logging.ERROR)
+        if localEx: traceback.print_exc()
+        if isLogging: 
+            with open(currentLogFile, "a") as logFile:
+                traceback.print_exc(file=logFile)
+        elif debug: 
+            with open(ytdl_gcext_logger.defaultLog, "a") as f:
+                traceback.print_exc(file=f)
+            
 
     # #archive if no SUCCESS
     # if status != "SUCCESS":

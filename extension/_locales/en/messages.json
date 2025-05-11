@@ -49,6 +49,9 @@
     },
     "options" : {
         "message": "options"
+    },
+    "nativeHostNotReachable": {
+        "message": "An error occured during communication with the native application"
     }
 
 }

@@ -1,5 +1,9 @@
 import { Download } from "../shared/download.js"
 import { YtdlpCache } from "../shared/ytdlpcache.js";
+import { config } from "../shared/config.js";
+
+//__config__
+let isLogging = config.isLogging
 
 //__init___Code that is executed in the beginning__________________________________________________________________
 
@@ -24,11 +28,13 @@ init()
 
 //__method_declarations________________________________________________________________________________________
 function log(...data) {
-    console.log(...data)
-    forwardToBackground({
-        "type": "LOG",
-        "payload": data
-    })
+    if (isLogging) {
+        console.log(...data)
+        forwardToBackground({
+            "type": "LOG",
+            "payload": data
+        })
+    }
 }
 
 function getNewPort() {
@@ -42,8 +48,8 @@ function getNewPort() {
     })
 
     port.onMessage.addListener((msg) => {
-        //console.log("Received Message from ", port.sender)
-        console.log("Received message: ", msg)
+        //log("Received Message from ", port.sender)
+        log("Received message: ", msg)
         if (pendingResponses[msg.id]) {
             pendingResponses[msg.id](msg.payload)
             delete pendingResponses[msg.id]
@@ -71,7 +77,7 @@ function forwardToBackground(obj) {
 
 function sendRequest(msg) {
     return new Promise((resolve, reject) =>{
-        console.log("Send message to background:", msg)
+        log("Send message to background:", msg)
         forwardToBackground(msg)
         pendingResponses[msg.id] = resolve;
     })
@@ -189,14 +195,14 @@ function download() {
  * @param {Download} downloadObj 
  */
 function update(downloadObj) {
-    //console.log("UPDATE", downloadObj.id)
+    //log("UPDATE", downloadObj.id)
     let downloadElement = document.getElementById(downloadObj.id)
 
     if (!downloadElement) {
-        //console.log("Create Download HTML Element")
+        //log("Create Download HTML Element")
         downloadElement = createDownloadElement(downloadObj)
     } else {
-        //console.log("Update existing Download HTML Element")
+        //log("Update existing Download HTML Element")
         let titleElement = downloadElement.getElementsByClassName("title").item(0)
         let stateElements = downloadElement.getElementsByClassName("state")
         let stateElement = stateElements.item(stateElements.length-1)
@@ -208,10 +214,10 @@ function update(downloadObj) {
         }
 
         if (stateElement.innerText === downloadObj.state) {
-            //console.log("Update progress of state", downloadObj.state)
+            //log("Update progress of state", downloadObj.state)
             progressElement.innerText = downloadObj.progress
         } else {
-            //console.log("Create new status element for new state", downloadObj.state)
+            //log("Create new status element for new state", downloadObj.state)
             if (Object.values(Download.Progress).includes(progressElement.innerText)) {
                 if (downloadObj.state === Download.State.ABORTED) {
                     progressElement.innerText = Download.Progress.ERROR
@@ -246,8 +252,9 @@ async function setDownloadPath() {
 async function init() {
     let formats = await getFormats()
 
-    console.log(formats)
+    log(formats)
 
+    
     if (formats && formats.length > 0) {
         document.getElementById("submit-download").addEventListener("click", download)
         document.getElementById("downloadPathButton").addEventListener("click", setDownloadPath)
@@ -276,8 +283,11 @@ async function init() {
         let popup = document.getElementById("download-popup");
         popup.classList.remove("hidden")
     } else {
-
+        let popup = document.getElementById("setup-popup");
+        popup.innerText = chrome.i18n.getMessage("nativeHostNotReachable")
+        popup.classList.remove("hidden")
     }
+    document.getElementById("setup-popup").innerText = chrome.i18n.getMessage("nativeHostNotReachable")
 
     
 }

@@ -1,6 +1,8 @@
-//TODO Ausprobieren, Fixen
 import { Download } from "./shared/download.js"
 import { YtdlpCache } from "./shared/ytdlpcache.js";
+import { config } from "./shared/config.js";
+//__config__
+let isLogging = config.isLogging
 
 //__init___Code that is executed in the beginning___________________
 chrome.runtime.onInstalled.addListener(YtdlpCache.clear)
@@ -98,11 +100,15 @@ const getTime = function() {
 };
 
 function log(...data) {
-	console.log(getTime(), ...data)//, "at", new Error().stack)
+	if (isLogging) {
+		console.log(getTime(), ...data)//, "at", new Error().stack)
+	}
 }
 
 function error(...data) {
-	console.error(getTime(), ...data)
+	if (isLogging) {
+		console.error(getTime(), ...data)
+	}
 }
 
 

@@ -43,5 +43,8 @@
     },
     "options" : {
         "message": "Optionen"
+    },
+    "nativeHostNotReachable": {
+        "message": "Fehler in der Kommunikation mit der nativen Anwendung"
     }
 }

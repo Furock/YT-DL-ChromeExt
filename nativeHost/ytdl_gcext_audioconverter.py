@@ -84,6 +84,8 @@ def convertFile(ctx):
         for targetCodec in FORMAT_CODECS.get(destinationFormat):
             ffmpegCommand = ffmpegCmd(targetCodec=targetCodec)
             log(' '.join([str(v) for v in ffmpegCommand]))
-            p = subprocess.Popen(ffmpegCommand, text=True, stdout=subprocess.PIPE)
+            p = subprocess.Popen(ffmpegCommand, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             code = p.wait()
+            #log("ffmpeg out:", p.stdout)
+            #log("ffmpeg err:", p.stderr)
             log(f"Conversion to {targetCodec} finished with code {code}")
